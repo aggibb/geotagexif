@@ -1,4 +1,4 @@
- # geotagraw.pl
+# geotagraw.pl
 
 ## Synopsis
 A Perl script to copy geotags from JPGs to the corresponding raw file.
