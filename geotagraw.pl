@@ -1,4 +1,6 @@
-# -*-perl-*-
+#! /usr/bin/env perl
+
+# POD at end of file
 
 use strict;
 use warnings;
