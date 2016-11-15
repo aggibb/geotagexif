@@ -13,6 +13,8 @@ A Perl script to copy geotags from JPGs to the corresponding raw file.
 
 * `-n`, `--nosubdirs`: do not process any subdirectories.
 
+* `-r`, `--readonly`: simulate copying the tags but do not update the raw file.
+
 * `-d`, `--debug`: print extra information (in practice, it only prints out the results of a calls to `Data::Dumper` at the moment).
 
 * `-q`,`--quiet`: suppress most text output.

@@ -11,10 +11,11 @@ use Image::ExifTool;
 use Data::Dumper;
 use Getopt::Long;
 
-my ($QUIET, $DEBUG, $NOSUBDIRS);
+my ($QUIET, $DEBUG, $NOSUBDIRS, $READONLY);
 my $status = GetOptions("quiet"  => \$QUIET,
                         "debug" => \$DEBUG,
-			"nosubdirs" => \$NOSUBDIRS);
+			"nosubdirs" => \$NOSUBDIRS,
+		        "readonly" => \$READONLY);
 
 # Make it so...
 process_dirs();
@@ -49,7 +50,9 @@ sub get_raw_files {
 sub process_raw_files {
   if (@_) {
     my $files = @_ == 1 ? "file" : "files";
-    print "found ".@_." raw $files to process\n";
+    print "found ".@_." raw $files to process";
+    print " - READONLY" if $READONLY;
+    print "\n";
     print Dumper(\@_) if $DEBUG;
     foreach my $rawfile (@_) {
       print "  $rawfile: " unless $QUIET;
@@ -120,7 +123,7 @@ sub copy_geotags {
 	print "    No need to update existing entry for $gpstag for $raw\n" unless $QUIET;
       }
     }
-    $raw_exif->WriteInfo($raw_filename) unless $tag_errors;
+    $raw_exif->WriteInfo($raw_filename) unless $tag_errors || $READONLY;
   } else {
     print "    No GPS tags in " . $jpg ."\n" unless $QUIET;
   }
