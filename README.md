@@ -25,11 +25,13 @@ The script looks for files with known raw format extensions and then in turn che
 
 `geotagraw` will look for an equivalently named JPG first: e.g., for a file called `DSC05124.ARW` it will look for `DSC05124.JPG` first. Failing that, it will pick the first JPG that matches the filename. For example, I use DxO Optics Pro and processed JPGs have `_DxO9` appended to the filename. The script will look for those JPGs too and will check the first one it finds for geotags. (Of course, if that file does not contain any geotags but others do, then the program will never know about them.)
 
+The JPG geotags are taken as truth: if `geotagraw` finds existing geotags in the raw file, they will be compared with those in the JPG and if different, will be replaced.
+
 By default, the script processes all subdirectories recursively, so be careful with the contents of those directories if you don't want the geotags transferred. Use the `-n` or `--nosubdirs` option to prevent this behaviour.
 
 ## Notes
 
-Warning: This program **will** modify your files. Please make sure you have backups of your raw files before running this code. Existing geotags will be **overwritten** and you will not be able to get them back! But then you do have a backup, right?
+Warning: This program **will** modify your files. Please make sure you have backups of your raw files before running this code. Existing geotags in the raw file will be **overwritten** and you will not be able to get them back! But then you do have a backup, right?
 
 Currently only looks for Nikon `.NEF`, Sony `.ARW` and Canon `.CR2`  files.
 
