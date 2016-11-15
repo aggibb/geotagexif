@@ -106,6 +106,7 @@ sub copy_geotags {
 
   if ($jpg_geotags && keys %$jpg_geotags > 1) {
     my $tag_errors = 0;
+    my $write_tag = 0;
     foreach my $gpstag (keys %$jpg_geotags) {
       # Catch the cases where the JPG and raw files have been geotagged separately
       my $update_tag = ($raw_geotags->{$gpstag} &&
@@ -115,6 +116,7 @@ sub copy_geotags {
 	my ($success, $err) = $raw_exif->SetNewValue($gpstag, $jpg_geotags->{$gpstag});
 	if ($success) {
 	  print "    Setting $gpstag to " . $jpg_geotags->{$gpstag} . "\n" unless $QUIET;
+	  $write_tag++;
 	} else {
 	  print "    Something went wrong setting $gpstag: " . $err ."\n" unless $QUIET;
 	  $tag_errors++;
@@ -123,7 +125,11 @@ sub copy_geotags {
 	print "    No need to update existing entry for $gpstag for $raw\n" unless $QUIET;
       }
     }
-    $raw_exif->WriteInfo($raw_filename) unless $tag_errors || $READONLY;
+    $write_tag = 0 if ($tag_errors || $READONLY);
+    if ($write_tag) {
+      print "    -> updating $write_tag ".($write_tag == 1 ? "tag" : "tags")."\n" unless $QUIET;
+      $raw_exif->WriteInfo($raw_filename);
+    }
   } else {
     print "    No GPS tags in " . $jpg ."\n" unless $QUIET;
   }
