@@ -12,16 +12,28 @@ use Data::Dumper;
 use Getopt::Long;
 
 my ($QUIET, $DEBUG, $NOSUBDIRS, $READONLY);
-my $status = GetOptions("quiet"  => \$QUIET,
-                        "debug" => \$DEBUG,
-			"nosubdirs" => \$NOSUBDIRS,
-		        "readonly" => \$READONLY);
+my $files;
+my @FILES;
+my $status = GetOptions(
+  "debug" => \$DEBUG,
+  "files=s" => \$files,
+  "nosubdirs" => \$NOSUBDIRS,
+  "quiet"  => \$QUIET,
+  "readonly" => \$READONLY
+  );
 
 # Make it so...
-process_dirs();
+if ($files) {
+  print "Reading list of files to process from $files\n";
+  $READONLY = 0;
+  read_raw_file_list($files);
+} else {
+  process_current_directory();
+  write_raw_file_list(@FILES);
+}
 
 ############################
-sub process_dirs {
+sub process_current_directory {
   my $cwd = cwd();
   print "Processing directory ".basename($cwd).": ";
   opendir(my $DH, $cwd);
@@ -35,9 +47,9 @@ sub process_dirs {
       print "  Found $nsubdirs to process...\n" unless $QUIET;
       print Dumper(\@subdirs) if $DEBUG;
       foreach my $subdir (@subdirs) {
-	chdir(File::Spec->catdir($cwd, $subdir));
-	process_dirs();
-	chdir($cwd);
+        chdir(File::Spec->catdir($cwd, $subdir));
+        process_current_directory();
+        chdir($cwd);
       }
     }
   }
@@ -55,16 +67,13 @@ sub process_raw_files {
     print "\n";
     print Dumper(\@_) if $DEBUG;
     foreach my $rawfile (@_) {
-      print "  $rawfile: " unless $QUIET;
       my $jpgfile = find_jpg_version($rawfile);
-      unless ($QUIET) {
-	if ($jpgfile) {
-	  print "found $jpgfile\n";
-	} else {
-	  print "has no corresponding jpg\n";
-	}
+      if ($jpgfile) {
+        print "  $rawfile: found $jpgfile\n" unless $QUIET;
+        copy_geotags($jpgfile, $rawfile);
+      } else {
+        print "  $rawfile: has no corresponding jpg\n" unless $QUIET;
       }
-      copy_geotags($jpgfile, $rawfile) if ($jpgfile);
     }
   } else {
     print "no files to process\n";
@@ -88,21 +97,14 @@ sub find_jpg_version {
 
 sub copy_geotags {
   my ($jpg, $raw) = @_;
-  my $cwd = cwd();
-  my $jpg_filename = File::Spec->catfile($cwd, $jpg);
-  my $raw_filename = File::Spec->catfile($cwd, $raw);
+
   my $jpg_exif = Image::ExifTool->new();
+  my $jpg_geotags = $jpg_exif->ImageInfo($jpg, 'gps:*');
+  return if check_gpstag_error($jpg_exif, $jpg);
+
   my $raw_exif = Image::ExifTool->new();
-  my $jpg_geotags = $jpg_exif->ImageInfo($jpg_filename, 'gps:*');
-  if ($jpg_exif->GetValue('Error')) {
-    print $jpg_exif->GetValue('Error') ." - $jpg\n";
-    return;
-  }
-  my $raw_geotags = $raw_exif->ImageInfo($raw_filename, 'gps:*');
-  if ($raw_exif->GetValue('Error')) {
-    print $raw_exif->GetValue('Error') ." - $raw\n";
-    return;
-  }
+  my $raw_geotags = $raw_exif->ImageInfo($raw, 'gps:*');
+  return if check_gpstag_error($raw_exif, $raw);
 
   if ($jpg_geotags && keys %$jpg_geotags > 1) {
     my $tag_errors = 0;
@@ -110,28 +112,64 @@ sub copy_geotags {
     foreach my $gpstag (keys %$jpg_geotags) {
       # Catch the cases where the JPG and raw files have been geotagged separately
       my $update_tag = ($raw_geotags->{$gpstag} &&
-			$raw_geotags->{$gpstag} ne $jpg_geotags->{$gpstag}) ? 1 : 0;
+      $raw_geotags->{$gpstag} ne $jpg_geotags->{$gpstag}) ? 1 : 0;
       my $add_tag = ($raw_geotags->{$gpstag}) ? 0 : 1;
       if ($add_tag || $update_tag) {
-	my ($success, $err) = $raw_exif->SetNewValue($gpstag, $jpg_geotags->{$gpstag});
-	if ($success) {
-	  print "    Setting $gpstag to " . $jpg_geotags->{$gpstag} . "\n" unless $QUIET;
-	  $write_tag++;
-	} else {
-	  print "    Something went wrong setting $gpstag: " . $err ."\n" unless $QUIET;
-	  $tag_errors++;
-	}
+        my ($success, $err) = $raw_exif->SetNewValue($gpstag, $jpg_geotags->{$gpstag});
+        if ($success) {
+          print "    $gpstag set to " . $jpg_geotags->{$gpstag} . "\n" unless $QUIET;
+          $write_tag++;
+        } else {
+          print "    Something went wrong setting $gpstag: " . $err ."\n" unless $QUIET;
+          $tag_errors++;
+        }
       } else {
-	print "    No need to update existing entry for $gpstag for $raw\n" unless $QUIET;
+        print "    No need to update existing entry for $gpstag for ".basename($raw)."\n" unless $QUIET;
       }
     }
     $write_tag = 0 if ($tag_errors || $READONLY);
     if ($write_tag) {
       print "    -> updating $write_tag ".($write_tag == 1 ? "tag" : "tags")."\n" unless $QUIET;
-      $raw_exif->WriteInfo($raw_filename);
+      $raw_exif->WriteInfo($raw);
+    }
+    if ($READONLY) {
+      push(@FILES, cwd().",$raw,$jpg\n");
     }
   } else {
     print "    No GPS tags in " . $jpg ."\n" unless $QUIET;
+  }
+}
+
+sub check_gpstag_error {
+  my ($exif, $file) = @_;
+  if ($exif->GetValue('Error')) {
+    print $exif->GetValue('Error') ." - $file\n";
+    return 1;
+  }
+  return 0;
+}
+
+sub write_raw_file_list {
+  my @file_list = @_;
+  my $cwd = cwd();
+  my $raw_file_list = File::Spec->catfile($cwd, basename($cwd)."_geotagraw.lis");
+  open my $OFH, ">", $raw_file_list or die "Unable to open output file, $raw_file_list: $!\n";
+  print $OFH @file_list;
+}
+
+sub read_raw_file_list {
+  my $cwd = cwd();
+  my $file_list = File::Spec->catfile($cwd, shift);
+  if (-e $file_list) {
+    open my $FH, "<", $file_list or die "Unable to open $file_list: $!\n";
+    my @files = <$FH>;
+    foreach my $entry (@files) {
+      chomp($entry);
+      my ($wd, $raw, $jpg) = split(/,/, $entry);
+      copy_geotags(File::Spec->catfile($wd, $jpg), File::Spec->catfile($wd, $raw));
+    }
+  } else {
+    print "Error - given file, $file_list, does not exist\n";
   }
 }
 
