@@ -11,16 +11,27 @@ use Image::ExifTool;
 use Data::Dumper;
 use Getopt::Long;
 
-my ($QUIET, $DEBUG, $NOSUBDIRS, $READONLY);
+my ($QUIET, $DEBUG, $HELP, $NOSUBDIRS, $READONLY);
 my $files;
 my @FILES;
-my $status = GetOptions(
-  "debug" => \$DEBUG,
-  "files=s" => \$files,
-  "nosubdirs" => \$NOSUBDIRS,
-  "quiet"  => \$QUIET,
-  "readonly" => \$READONLY
-  );
+my $status = GetOptions("debug" => \$DEBUG,
+			"files=s" => \$files,
+			"nosubdirs" => \$NOSUBDIRS,
+			"quiet"  => \$QUIET,
+			"readonly" => \$READONLY,
+			"help" => \$HELP);
+
+if ($HELP) {
+  print "geotagraw.pl: copy geotags from JPG EXIF into corresponding RAW files\n";
+  print "Options:\n";
+  print "  -r: readonly, determine which files have geotags and produce an output file\n".
+    "      with names\n";
+  print "  -f <filelist.txt>: name of file with list of names to copy geotags from/to\n";
+  print "  -n: no-subdirs, only run in the current directory rather than traversing\n"
+    ."     subdirectories\n";
+  print "  -q: quiet, don't print any messages to screen\n";
+  exit;
+}
 
 # Make it so...
 if ($files) {
@@ -69,10 +80,10 @@ sub process_raw_files {
     foreach my $rawfile (@_) {
       my $jpgfile = find_jpg_version($rawfile);
       if ($jpgfile) {
-        print "  $rawfile: found $jpgfile\n" unless $QUIET;
+        print "  $rawfile: found $jpgfile" unless $QUIET;
         copy_geotags($jpgfile, $rawfile);
-      } else {
-        print "  $rawfile: has no corresponding jpg\n" unless $QUIET;
+#      } else {
+#        print "  $rawfile: has no corresponding jpg\n" unless $QUIET;
       }
     }
   } else {
@@ -107,6 +118,7 @@ sub copy_geotags {
   return if check_gpstag_error($raw_exif, $raw);
 
   if ($jpg_geotags && keys %$jpg_geotags > 1) {
+    print "\n";
     my $tag_errors = 0;
     my $write_tag = 0;
     foreach my $gpstag (keys %$jpg_geotags) {
@@ -136,7 +148,7 @@ sub copy_geotags {
       push(@FILES, cwd().",$raw,$jpg\n");
     }
   } else {
-    print "    No GPS tags in " . $jpg ."\n" unless $QUIET;
+    print ", but it has no GPS tags\n" unless $QUIET;
   }
 }
 
