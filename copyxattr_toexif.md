@@ -23,9 +23,16 @@ A Perl script to copy geotags stored in extended attributes to image EXIF
 
 ## Description
 
-This script will look for a handful of specific extended attributes saved by the [Lyn](http://lynapp.com) image management application in the image EXIF information. Currently it will save geotags, the star rating, (as Rating) and the Finder colour (stored as Label).
+This script will look for a handful of specific extended attributes saved by the [Lyn](http://lynapp.com) image management application in the image EXIF information. Currently it will save geotags, the star rating, (as Rating), and the Finder colour (stored as Label).
 
-Note that the implementation is specific to my own rating system in which the star ratings from Lyn on the reverse scale for ACDSee (i.e., an image rated 5 stars on Lyn will have an ACDSee rating of 1).
+If no files are given, `copyxattr_toexif` will examine each supported
+file type in the current directory and process each in turn. Existing
+geotags are not altered.
+
+Note that the implementation is specific to my own rating system in
+which the star ratings from Lyn on the reverse scale for ACDSee (i.e.,
+an image rated 5 stars on Lyn will have an ACDSee rating of 1). And
+not all Finder colours have equivalents in ACDSee.
 
 ### Elevation lookup
 
@@ -33,13 +40,13 @@ Lyn can only store longitude and latitude when geotagging: it doesn't know about
 
 ## Notes
 
-* Developed on macOS, and makes use of the Finder user tag that stores a colour. Should still work on other Unix systems that support extended attributes though as it only tries to read the attributes.
-
 * Warning: This program **will** modify your files. Please make sure you have backups of your image files before running this code.
 
 * Currently only looks for JPGs, Nikon `.NEF`, Sony `.ARW` and Canon `.CR2`  files.
 
 * Error checking hasn't been exhaustively tested yet.
+
+* Developed on macOS, and makes use of the Finder user tag that stores a colour. Should still work on other Unix systems that support extended attributes though as it only tries to read the attributes.
 
 * I couldn't find any info about rate limits for the elevation lookup queries, but I imagine it's not something to be abused. The elevation will not be written if it's not defined.
 
@@ -62,6 +69,14 @@ Others that should already be present are:
 * `LWP::Simple`
 * `Getopt::Long`
 * `Data::Dumper`
+
+## Useful links
+
+* http://www.sno.phy.queensu.ca/~phil/exiftool/geotag.html
+* http://lynapp.com
+*
+https://www.nrcan.gc.ca/earth-sciences/geography/topographic-information/free-data-geogratis/geogratis-web-services/api/17328
+* https://nationalmap.gov/epqs/
 
 ## License and copyright
 
