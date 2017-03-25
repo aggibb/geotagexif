@@ -74,8 +74,7 @@ Others that should already be present are:
 
 * http://www.sno.phy.queensu.ca/~phil/exiftool/geotag.html
 * http://lynapp.com
-*
-https://www.nrcan.gc.ca/earth-sciences/geography/topographic-information/free-data-geogratis/geogratis-web-services/api/17328
+* https://www.nrcan.gc.ca/earth-sciences/geography/topographic-information/free-data-geogratis/geogratis-web-services/api/17328
 * https://nationalmap.gov/epqs/
 
 ## License and copyright
