@@ -15,8 +15,10 @@ use JSON::Parse 'parse_json';
 
 # See copyxattr_toexif.md
 
-my ($DEBUG, $HELP, $QUIET, $READONLY);
+my ($DEBUG, $HELP, $QUIET, $READONLY, $GEOTAG, $OVERWRITE);
 my $status = GetOptions("debug" => \$DEBUG,
+      "geotag" => \$GEOTAG,
+      "overwrite" => \$OVERWRITE,
 			"help" => \$HELP,
 			"quiet" => \$QUIET,
 			"readonly" => \$READONLY
@@ -86,7 +88,7 @@ sub copy_tags {
   my $tag_errors = 0;
   my $write_tag = 0;
   if ($tags{Geo}) {
-    if ($image_geotags && keys %$image_geotags > 1) {
+    if (!$OVERWRITE && $image_geotags && keys %$image_geotags > 1) {
       # Should do some work here to see if the tags are the same
       print "Image $image already geotagged\n";
     } else {
@@ -165,7 +167,7 @@ sub lookup_elevation {
   print Dumper($request_contents) if $DEBUG;
   if ($request_contents) {
     my $data = parse_json($request_contents);
-    return $data->{altitude};
+    return (defined $data->{altitude})? $data->{altitude} : 0;
   } else {
     print "GeoGratis Elevation API is not available at this time\n";
     return;

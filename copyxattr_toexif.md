@@ -15,6 +15,10 @@ A Perl script to copy geotags stored in extended attributes to image EXIF
 
 * `-r`, `--readonly`: simulate copying the tags but do not update the files.
 
+* `-o`, `--overwrite`: overwrite existing tags.
+
+* `-g`, `--geotag`: copy only the geotags, not any others
+
 * `-d`, `--debug`: print extra information (in practice, it only prints out the results of a calls to `Data::Dumper` at the moment).
 
 * `-q`,`--quiet`: suppress most text output.
@@ -25,14 +29,9 @@ A Perl script to copy geotags stored in extended attributes to image EXIF
 
 This script will look for a handful of specific extended attributes saved by the [Lyn](http://lynapp.com) image management application in the image EXIF information. Currently it will save geotags, the star rating, (as Rating), and the Finder colour (stored as Label).
 
-If no files are given, `copyxattr_toexif` will examine each supported
-file type in the current directory and process each in turn. Existing
-geotags are not altered.
+If no files are given, `copyxattr_toexif` will examine each supported file type in the current directory and process each in turn. Existing geotags are not altered.
 
-Note that the implementation is specific to my own rating system in
-which the star ratings from Lyn on the reverse scale for ACDSee (i.e.,
-an image rated 5 stars on Lyn will have an ACDSee rating of 1). And
-not all Finder colours have equivalents in ACDSee.
+Note that the implementation is specific to my own rating system in which the star ratings from Lyn on the reverse scale for ACDSee (i.e., an image rated 5 stars on Lyn will have an ACDSee rating of 1). And not all Finder colours have equivalents in ACDSee.
 
 ### Elevation lookup
 
