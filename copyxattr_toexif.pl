@@ -20,7 +20,7 @@ my $status = GetOptions("debug" => \$DEBUG,
 			"help" => \$HELP,
 			"quiet" => \$QUIET,
 			"readonly" => \$READONLY
-		       );
+		  );
 
 if ($HELP) {
   print "copyxattr_toexif.pl : store extended attribute info in EXIF\n";
@@ -52,12 +52,12 @@ foreach my $image (@FILES) {
     if (getfattr($fh, $fattr) =~ /^bplist/) {
       my $current_tag = $bpread->open_string(getfattr($fh, $fattr))->data;
       if ($fattr =~ /LynGeoTag/) {
-	$tags{Geo} = $current_tag;
+	      $tags{Geo} = $current_tag;
       } elsif ($fattr =~ /ItemStarRating/) {
-	$tags{Rating} = (6 - $current_tag);
+	      $tags{Rating} = (6 - $current_tag);
       } elsif ($fattr =~ /ItemUserTags/ && @$current_tag > 0) {
-	my @colour = split(/\s+/,$current_tag->[0]);
-	$tags{Label} = $colour[0];
+	      my @colour = split(/\s+/,$current_tag->[0]);
+	      $tags{Label} = $colour[0];
       }
     }
   }
@@ -98,9 +98,9 @@ sub copy_tags {
 		     "GPSLatitudeRef" => "North",
 		     "GPSMapDatum" => "WGS 84");
       my $elevation = lookup_elevation($geotags);
-      if ($elevation) {
-	$geotags{"GPSAltitude"} = $elevation;
-	$geotags{"GPSAltitudeRef"} = "Above Sea Level";
+      if (defined $elevation) {
+	      $geotags{"GPSAltitude"} = $elevation;
+	      $geotags{"GPSAltitudeRef"} = "Above Sea Level";
       }
       my ($num_tags, $errors) = set_exif_tags($exif, %geotags);
       $write_tag += $num_tags;
@@ -113,12 +113,12 @@ sub copy_tags {
   my ($num_tags, $errors) = set_exif_tags($exif, %tags);
   $write_tag += $num_tags;
   $tag_errors += $errors;
-  
+
   my $success = 0;
   $write_tag = 0 if ($tag_errors || $READONLY);
   if ($write_tag) {
     print "Updating $write_tag ".($write_tag == 1 ? "tag" : "tags")." for $image\n"
-	unless $QUIET;
+	    unless $QUIET;
     $exif->WriteInfo($image);
     $success = 1;
   }
