@@ -15,9 +15,9 @@ use JSON::Parse 'parse_json';
 
 # See copyxattr_toexif.md
 
-my ($DEBUG, $HELP, $QUIET, $READONLY, $GEOTAG, $OVERWRITE);
+my ($DEBUG, $HELP, $QUIET, $READONLY, $ALL, $OVERWRITE);
 my $status = GetOptions("debug" => \$DEBUG,
-      "geotag" => \$GEOTAG,
+      "all" => \$ALL,
       "overwrite" => \$OVERWRITE,
 			"help" => \$HELP,
 			"quiet" => \$QUIET,
@@ -72,7 +72,7 @@ sub get_image_filenames {
   if (ref($list[0]) eq 'ARRAY') {
     @list = @{$list[0]};
   }
-  return  map {$_} grep {/JPG$|ARW$|NEF$|CR2$/i} @list;
+  return map {$_} grep {/JPG$|ARW$|NEF$|CR2$/i} @list;
 }
 
 sub copy_tags {
@@ -93,7 +93,7 @@ sub copy_tags {
       print "Image $image already geotagged\n";
     } else {
       my $geotags = $tags{Geo};
-      # No existing tags so just copy
+      # No existing tags so just copy or overwrite if specified
       my %geotags = ("GPSLatitude" => $geotags->{lat},
 		     "GPSLongitude" => $geotags->{lng},
 		     "GPSLongitudeRef" => "West",
@@ -104,6 +104,7 @@ sub copy_tags {
 	      $geotags{"GPSAltitude"} = $elevation;
 	      $geotags{"GPSAltitudeRef"} = "Above Sea Level";
       }
+      print Dumper(\%geotags);
       my ($num_tags, $errors) = set_exif_tags($exif, %geotags);
       $write_tag += $num_tags;
       $tag_errors += $errors;
@@ -112,15 +113,17 @@ sub copy_tags {
   delete $tags{Geo};
   # Now write other tags if present
   print "Non-geo tags: " . Dumper(\%tags) if $DEBUG;
-  my ($num_tags, $errors) = set_exif_tags($exif, %tags);
-  $write_tag += $num_tags;
-  $tag_errors += $errors;
+  if ($ALL) {
+    my ($num_tags, $errors) = set_exif_tags($exif, %tags);
+    $write_tag += $num_tags;
+    $tag_errors += $errors;
+  }
 
   my $success = 0;
   $write_tag = 0 if ($tag_errors || $READONLY);
   if ($write_tag) {
     print "Updating $write_tag ".($write_tag == 1 ? "tag" : "tags")." for $image\n"
-	    unless $QUIET;
+	     unless $QUIET;
     $exif->WriteInfo($image);
     $success = 1;
   }
@@ -132,6 +135,7 @@ sub set_exif_tags {
   my ($exif, %tags) = @_;
   my ($write_tag, $tag_errors) = (0,0);
   foreach my $k (keys %tags) {
+    print "Setting $k to $tags{k}...";
     my ($success, $err) = $exif->SetNewValue($k, $tags{$k});
     if ($success) {
       $write_tag++;
@@ -167,7 +171,7 @@ sub lookup_elevation {
   print Dumper($request_contents) if $DEBUG;
   if ($request_contents) {
     my $data = parse_json($request_contents);
-    return (defined $data->{altitude})? $data->{altitude} : 0;
+    return $data->{altitude};
   } else {
     print "GeoGratis Elevation API is not available at this time\n";
     return;
@@ -179,10 +183,13 @@ sub print_tags {
   if ($tags->{Geo}) {
     my $geotags = $tags->{Geo};
     print "Geotag attributes for $image:\n  Latitude = ".$geotags->{lat}.
-	"\n  Longitude = ".$geotags->{lng}."\n";
-    print "  Elevation = ".lookup_elevation($geotags)." (GeoGratis lookup)\n";
+	    "\n  Longitude = ".$geotags->{lng}."\n";
+    my $elevation = lookup_elevation($geotags);
+    print "  Elevation = ". (defined $elevation ? $elevation : "undefined") ." (GeoGratis lookup)\n";
   }
-  print "ACDSee tags:\n";
-  print "  Label = ".$tags->{Label}."\n" if ($tags->{Label});
-  print "  Rating = ".$tags->{Rating}."\n" if ($tags->{Rating});
+  if ($ALL) {
+    print "ACDSee tags:\n";
+    print "  Label = ".$tags->{Label}."\n" if ($tags->{Label});
+    print "  Rating = ".$tags->{Rating}."\n" if ($tags->{Rating});
+  }
 }

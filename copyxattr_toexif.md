@@ -17,7 +17,7 @@ A Perl script to copy geotags stored in extended attributes to image EXIF
 
 * `-o`, `--overwrite`: overwrite existing tags.
 
-* `-g`, `--geotag`: copy only the geotags, not any others
+* `-a`, `--all`: copy all tags.
 
 * `-d`, `--debug`: print extra information (in practice, it only prints out the results of a calls to `Data::Dumper` at the moment).
 
@@ -27,7 +27,7 @@ A Perl script to copy geotags stored in extended attributes to image EXIF
 
 ## Description
 
-This script will look for a handful of specific extended attributes saved by the [Lyn](http://lynapp.com) image management application in the image EXIF information. Currently it will save geotags, the star rating, (as Rating), and the Finder colour (stored as Label).
+This script will look for a handful of specific extended attributes saved by the [Lyn](http://lynapp.com) image management application in the image EXIF information. Currently it will save geotags, the star rating (as Rating), and the Finder colour (stored as Label). By default, only the geotags will be copied.
 
 If no files are given, `copyxattr_toexif` will examine each supported file type in the current directory and process each in turn. Existing geotags are not altered.
 
